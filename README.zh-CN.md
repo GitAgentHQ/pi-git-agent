@@ -1,6 +1,6 @@
 # Git Agent for Pi ![](https://img.shields.io/badge/runtime-Pi-blue)
 
-[![Version](https://img.shields.io/npm/v/@fradser/git-agent)](https://www.npmjs.com/package/@fradser/git-agent) [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Version](https://img.shields.io/npm/v/@fradser/pi-git-agent)](https://www.npmjs.com/package/@fradser/pi-git-agent) [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 [English](README.md) | **简体中文**
 
@@ -42,8 +42,8 @@ git-agent workflows:
 
 ```bash
 # 已发布版本
-pi install npm:@fradser/git-agent
-# 或本地安装:pi install /path/to/git-agent/git-agent-pi-package
+pi install npm:@fradser/pi-git-agent
+# 或本地安装:pi install /path/to/git-agent/pi-git-agent
 ```
 
 需要 PATH 上有 `git-agent` CLI(由本仓库的 `git-agent-cli/` 目录构建)。
@@ -51,7 +51,7 @@ pi install npm:@fradser/git-agent
 ## 文件
 
 ```
-git-agent-pi-package/
+pi-git-agent/
 ├── extensions/
 │   ├── menu.ts               # /git-agent 命令菜单 + 引导注入
 │   ├── session-context.ts    # session_context 工具(提交意图来源)

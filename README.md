@@ -1,6 +1,6 @@
 # Git Agent for Pi ![](https://img.shields.io/badge/runtime-Pi-blue)
 
-[![Version](https://img.shields.io/npm/v/@fradser/git-agent)](https://www.npmjs.com/package/@fradser/git-agent) [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Version](https://img.shields.io/npm/v/@fradser/pi-git-agent)](https://www.npmjs.com/package/@fradser/pi-git-agent) [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 **English** | [简体中文](README.zh-CN.md)
 
@@ -42,8 +42,8 @@ Each selection embeds the full procedure (`procedures/*.md`) into a follow-up me
 
 ```bash
 # published
-pi install npm:@fradser/git-agent
-# or from this repo: pi install /path/to/git-agent/git-agent-pi-package
+pi install npm:@fradser/pi-git-agent
+# or from this repo: pi install /path/to/git-agent/pi-git-agent
 ```
 
 Requires the `git-agent` CLI on PATH (built from the sibling `git-agent-cli/` directory in this repo).
@@ -51,7 +51,7 @@ Requires the `git-agent` CLI on PATH (built from the sibling `git-agent-cli/` di
 ## Files
 
 ```
-git-agent-pi-package/
+pi-git-agent/
 ├── extensions/
 │   ├── menu.ts               # /git-agent command menu + guidance injection
 │   ├── session-context.ts    # session_context tool (intent source for commits)

@@ -1,4 +1,4 @@
-"""Tests for the @fradser/git-agent pi package.
+"""Tests for the @fradser/pi-git-agent pi package.
 
 Covers the native /git-agent command menu (no skill surface — same pattern as
 @fradser/memory), the commit guard extension (extensions/validate-commit.ts),
@@ -23,7 +23,7 @@ class TestGitAgentManifest(unittest.TestCase):
         """package.json is a valid Pi package manifest — extensions only, no skills."""
         with open(os.path.join(GA_PKG_DIR, "package.json"), "r", encoding="utf-8") as f:
             data = json.load(f)
-        self.assertEqual(data["name"], "@fradser/git-agent")
+        self.assertEqual(data["name"], "@fradser/pi-git-agent")
         self.assertIn("pi-package", data.get("keywords", []))
         self.assertNotIn("skills", data["pi"], "git-agent uses the /git-agent menu, not skills")
         self.assertIn("extensions", data["pi"])
