@@ -4,7 +4,7 @@ Feature: /git-agent command menu
   procedure inline via pi.sendUserMessage.
 
   Background:
-    Given the @fradser/pi-git-agent package is installed
+    Given the @gitagenthq/pi-git-agent package is installed
     And package.json registers extensions only (no skills)
 
   Scenario: Menu lists all workflows

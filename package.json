@@ -1,5 +1,5 @@
 {
-  "name": "@fradser/pi-git-agent",
+  "name": "@gitagenthq/pi-git-agent",
   "version": "0.7.0",
   "description": "AI-first Git CLI automation — atomic AI commits, co-change relations (git-agent related), native extension guard for git commit/add, and workspace initialization (native /git-agent menu, no skill surface)",
   "author": "Frad LEE <fradser@gmail.com>",
