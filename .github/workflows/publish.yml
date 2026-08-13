@@ -10,13 +10,15 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      id-token: write # OIDC trusted publishing — no NPM_TOKEN needed
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          registry-url: https://registry.npmjs.org
+          # No registry-url / NODE_AUTH_TOKEN: the OIDC flow needs npm's own
+          # auth, and setup-node's registry-url interferes with the trigger.
 
       # Publish only when the local version differs from the latest published
       # npm version. Idempotent: an already-published version is never
@@ -36,6 +38,4 @@ jobs:
 
       - name: Publish to npm
         if: steps.check.outputs.publish == 'true'
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --provenance --access public
