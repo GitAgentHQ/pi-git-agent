@@ -1,6 +1,6 @@
 # Git Agent for Pi ![](https://img.shields.io/badge/runtime-Pi-blue)
 
-[![Version](https://img.shields.io/npm/v/@gitagenthq/pi-git-agent)](https://www.npmjs.com/package/@gitagenthq/pi-git-agent) [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Version](https://img.shields.io/npm/v/pi-git-agent)](https://www.npmjs.com/package/pi-git-agent) [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 [English](README.md) | **简体中文**
 
@@ -42,7 +42,7 @@ git-agent workflows:
 
 ```bash
 # 已发布版本
-pi install npm:@gitagenthq/pi-git-agent
+pi install npm:pi-git-agent
 # 或本地安装:pi install /path/to/git-agent/pi-git-agent
 ```
 

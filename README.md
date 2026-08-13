@@ -1,6 +1,6 @@
 # Git Agent for Pi ![](https://img.shields.io/badge/runtime-Pi-blue)
 
-[![Version](https://img.shields.io/npm/v/@gitagenthq/pi-git-agent)](https://www.npmjs.com/package/@gitagenthq/pi-git-agent) [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Version](https://img.shields.io/npm/v/pi-git-agent)](https://www.npmjs.com/package/pi-git-agent) [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 **English** | [简体中文](README.zh-CN.md)
 
@@ -42,7 +42,7 @@ Each selection embeds the full procedure (`procedures/*.md`) into a follow-up me
 
 ```bash
 # published
-pi install npm:@gitagenthq/pi-git-agent
+pi install npm:pi-git-agent
 # or from this repo: pi install /path/to/git-agent/pi-git-agent
 ```
 

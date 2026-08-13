@@ -1,5 +1,5 @@
 /**
- * @gitagenthq/pi-git-agent — native pi /git-agent command menu.
+ * pi-git-agent — native pi /git-agent command menu.
  *
  * Replaces the /skill:commit|commit-and-push|init|related skill surface with a
  * pi-native command menu (same pattern as @fradser/memory's /memory command):
@@ -62,7 +62,7 @@ async function pathExists(p: string): Promise<boolean> {
 }
 
 /**
- * Resolve the @gitagenthq/pi-git-agent package dir. Covers npm/git installs under
+ * Resolve the pi-git-agent package dir. Covers npm/git installs under
  * ~/.pi/agent (via settings.json packages, including relative-path dev
  * checkouts) and the monorepo layout relative to cwd.
  */
