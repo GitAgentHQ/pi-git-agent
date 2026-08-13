@@ -1,0 +1,41 @@
+name: Publish to npm
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      # Publish only when the local version differs from the latest published
+      # npm version. Idempotent: an already-published version is never
+      # re-published. No tags needed.
+      - name: Check for version bump
+        id: check
+        run: |
+          PKG_NAME=$(node -p "require('./package.json').name")
+          PKG_VER=$(node -p "require('./package.json').version")
+          LATEST=$(npm view "$PKG_NAME" version 2>/dev/null || echo "0.0.0")
+          echo "  $PKG_NAME@$PKG_VER (registry: $LATEST)"
+          if [ "$PKG_VER" != "$LATEST" ]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No version change — nothing to publish."
+          fi
+
+      - name: Publish to npm
+        if: steps.check.outputs.publish == 'true'
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
