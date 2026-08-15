@@ -5,7 +5,7 @@ Detailed command reference for `git-agent`.
 ## Core Commands
 
 ### 1. `git-agent commit`
-Generates and creates atomic AI commits from repository changes.
+Generates and creates atomic AI commits from repository changes. Staging, multi-commit splitting (up to 5 atomic groups), auto-scope derivation, active model attribution inference, and hook validation/retries are completely delegated to the CLI.
 
 ```bash
 # Basic invocation (auto-stages changes and splits into up to 5 atomic commits)
@@ -27,26 +27,29 @@ git-agent commit --free
 # Add custom trailers or co-authors
 git-agent commit --co-author "Alice <alice@example.com>"
 git-agent commit --trailer "Ticket: #123"
+
+# Machine-readable output
+git-agent commit --intent "..." -o json
 ```
 
-**Intent guidance**: the CLI never reads agent session files. The only bridge
-from the conversation is `--intent` (plus `--trailer`). Call the
-`session_context` extension tool before committing and build the intent from
-its output — user's own words, rationale, and verification steps — rather
-than a compressed one-liner. A detailed intent produces a body that records
-*why* a change exists, not just *what* changed.
+**Intent guidance**: the CLI never reads agent session files directly. The only bridge from the conversation is `--intent` (plus `--trailer`). Call the `session_context` extension tool before committing and build the intent from its output — user's own words, rationale, and verification steps — rather than a compressed one-liner. A detailed intent produces a body that records *why* a change exists, not just *what* changed.
+
+**Planner Timeout**: if the diff is too large or model response is slow (`LLM planner timed out`), raise the timeout via config (`git-agent config set request_timeout 5m`), cap the diff with `--max-diff-lines <n>` / `--max-diff-bytes <n>`, or switch model with `--model`.
 
 ### 2. `git-agent related`
-Query historical co-change relationships from git commit history. Read-only and offline.
+Query historical co-change relationships from git commit history. Read-only and offline. Complements static grep/glob searches with temporal change patterns.
 
 ```bash
 # Query files that historically change together with specified file(s)
 git-agent related src/components/Header.tsx
 
+# No arguments: use current working-tree changes as seeds
+git-agent related
+
 # Query test files related to specified file(s)
 git-agent related --tests src/components/Header.tsx
 
-# JSON output for tooling
+# JSON output with coupling scores and supporting commits
 git-agent related -o json src/components/Header.tsx
 ```
 
@@ -59,6 +62,9 @@ git-agent init --scope --force
 
 # Re-derive .gitignore while preserving custom rules
 git-agent init --gitignore
+
+# Full initialization
+git-agent init --scope --gitignore
 ```
 
 ### 4. `git-agent status`
@@ -72,8 +78,9 @@ git-agent status
 
 ## Configuration Precedence
 
-1. CLI Flags (`--api-key`, `--model`, `--base-url`, `--free`, `--co-author`)
-2. Agent Session Environment Variables (`PI_MODEL`, `CLAUDE_CODE_MODEL`, `CODEX_MODEL`, `MODEL`)
-3. Git config (`git config --local git-agent.model`)
-4. Global Config (`~/.config/git-agent/config.yml`)
-5. Free Shared-Gateway Default (`--free` ignores config files and forces the free gateway)
+1. **CLI Flags** (`--api-key`, `--model`, `--base-url`, `--free`, `--co-author`)
+2. **Local Git Config** (`git config --local git-agent.model`)
+3. **Global Config** (`~/.config/git-agent/config.yml`)
+4. **Free Shared-Gateway Default** (`--free` ignores config files and forces the free gateway)
+
+> **Attribution vs. Inference**: Agent session environment variables (`PI_MODEL`, `CLAUDE_CODE_MODEL`, `CODEX_MODEL`) **never** set the inference/generation model — they are used exclusively to infer `Co-Authored-By` trailer attribution.
