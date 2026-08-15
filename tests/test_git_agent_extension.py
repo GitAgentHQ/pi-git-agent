@@ -156,6 +156,77 @@ class TestSessionContextExtension(unittest.TestCase):
         self.assertIn('Run the "', content)
         self.assertIn("workflow", content)
 
+    def test_session_context_collapses_skill_invocations(self):
+        """session_context must collapse expanded skill prompt blocks into concise [Invoked skill: ...]
+        indicators, preserving user arguments while stripping massive skill prompt bodies."""
+        ext_path = os.path.join(GA_PKG_DIR, "extensions", "session-context.ts")
+        with open(ext_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        self.assertIn("collapseSkillInvocations", content)
+        self.assertIn("<skill", content)
+        self.assertIn("[Invoked skill:", content)
+
+    def test_collapse_skill_invocations_execution(self):
+        """Test collapseSkillInvocations logic against various skill invocation inputs."""
+        import subprocess
+
+        js_code = """
+        const { collapseSkillInvocations } = require('./extensions/session-context.ts');
+        """
+        # We can test with tsx or node with a small script that tests the collapse function
+        test_script = """
+        const fs = require('fs');
+        const content = fs.readFileSync('./extensions/session-context.ts', 'utf-8');
+        // Extract the collapseSkillInvocations function body or compile on the fly
+        const funcMatch = content.match(/export function collapseSkillInvocations[\\s\\S]*?\\n}/);
+        if (!funcMatch) {
+            console.error('collapseSkillInvocations not found');
+            process.exit(1);
+        }
+        const fn = new Function('text', funcMatch[0].replace('export function collapseSkillInvocations(text: string): string', '').replace(/^[^{]*{/, '').slice(0, -1));
+
+        // Test 1: Expanded skill with arguments
+        const input1 = '<skill name="web-perf" location="/path/SKILL.md">\\n# Prompt\\nLots of instructions...\\n</skill>\\n\\naudit the site';
+        const res1 = fn(input1);
+        if (res1 !== '[Invoked skill: web-perf]\\n\\naudit the site') {
+            console.error('Test 1 failed:', JSON.stringify(res1));
+            process.exit(1);
+        }
+
+        // Test 2: Expanded skill without arguments
+        const input2 = '<skill name="commit" location="/path/SKILL.md">\\n# Prompt\\nCommit instructions...\\n</skill>';
+        const res2 = fn(input2);
+        if (res2 !== '[Invoked skill: commit]') {
+            console.error('Test 2 failed:', JSON.stringify(res2));
+            process.exit(1);
+        }
+
+        // Test 3: Raw /skill: command
+        const input3 = '/skill:patent-architect foo bar';
+        const res3 = fn(input3);
+        if (res3 !== '[Invoked skill: patent-architect] foo bar') {
+            console.error('Test 3 failed:', JSON.stringify(res3));
+            process.exit(1);
+        }
+
+        // Test 4: Normal message untouched
+        const input4 = 'Please optimize session_context for skills';
+        const res4 = fn(input4);
+        if (res4 !== 'Please optimize session_context for skills') {
+            console.error('Test 4 failed:', JSON.stringify(res4));
+            process.exit(1);
+        }
+
+        console.log('OK');
+        """
+        proc = subprocess.run(
+            ["node", "-e", test_script],
+            cwd=GA_PKG_DIR,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(proc.returncode, 0, f"Node script failed: {proc.stderr}\n{proc.stdout}")
+
     def test_commit_procedure_prioritizes_session_context(self):
         """commit procedure must instruct building the intent from session context, not a one-liner."""
         proc = os.path.join(GA_PKG_DIR, "procedures", "commit.md")
