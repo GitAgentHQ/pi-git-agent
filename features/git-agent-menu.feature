@@ -30,6 +30,18 @@ Feature: /git-agent command menu
     When the session_context tool builds the commit intent
     Then the message starting with Run the "Commit changes" workflow. is not listed as a user request
 
+  Scenario: session_context collapses expanded skill invocations
+    Given a user message contains an expanded skill block "<skill name=\"web-perf\" location=\"...\">...long prompt...</skill>" with arguments "audit the site"
+    When the session_context tool extracts the user request
+    Then the skill prompt body is collapsed to "[Invoked skill: web-perf]"
+    And the user arguments "audit the site" are preserved
+
+  Scenario: session_context handles skill invocations with no arguments
+    Given a user message contains an expanded skill block "<skill name=\"commit\" location=\"...\">...long prompt...</skill>" without arguments
+    When the session_context tool extracts the user request
+    Then the skill prompt body is collapsed to "[Invoked skill: commit]"
+    And the internal skill prompt instructions are omitted
+
   Scenario: No skill surface remains
     Given the package tree
     Then there is no skills/ directory
