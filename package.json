@@ -1,6 +1,6 @@
 {
   "name": "pi-git-agent",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "AI-first Git CLI automation — atomic AI commits, co-change relations (git-agent related), native extension guard for git commit/add, and workspace initialization (native /git-agent menu, no skill surface)",
   "author": "Frad LEE <fradser@gmail.com>",
   "license": "MIT",
@@ -13,7 +13,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/FradSer/git-agent.git"
+    "url": "https://github.com/GitAgentHQ/pi-git-agent.git"
   },
   "publishConfig": {
     "access": "public"

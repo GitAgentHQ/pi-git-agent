@@ -44,10 +44,10 @@ const MENU: MenuItem[] = [
 const GUIDANCE = `
 ## Git automation (git-agent)
 
-- **Commit**: follow {{PKG_DIR}}/procedures/commit.md — call the \`session_context\` tool first, build a 2-4 sentence intent from the session, then run \`git-agent commit --intent "<intent>"\` (add \`--no-stage\` when files are already staged; retry with \`--free\` on auth errors).
+- **Commit**: follow {{PKG_DIR}}/procedures/commit.md — call the \`session_context\` tool first, build a 2-4 sentence intent from the session, then run \`git-agent commit --intent "<intent>"\` (add \`--no-stage\` when files are already staged; retry with \`--free\` on auth errors). Never run manual \`git status\`/\`git diff\`/\`git log\` before committing — delegate staging, atomic splitting, scope mining, and hook validation entirely to \`git-agent\`.
 - **Commit and push**: {{PKG_DIR}}/procedures/commit-and-push.md — same commit, then \`git push\`.
+- **Related files & tests**: {{PKG_DIR}}/procedures/related.md — run \`git-agent related [--tests|-o json] <paths>\` before multi-file edits or when choosing which tests to run.
 - **Init / optimize**: {{PKG_DIR}}/procedures/init.md — \`git-agent init --scope --force\`, \`--gitignore\`, or both.
-- **Related files & tests**: {{PKG_DIR}}/procedures/related.md — \`git-agent related [--tests|-o json] <paths>\`.
 
 The \`/git-agent\` menu lists the same workflows.
 `;
