@@ -42,6 +42,12 @@ Feature: /git-agent command menu
     Then the skill prompt body is collapsed to "[Invoked skill: commit]"
     And the internal skill prompt instructions are omitted
 
+  Scenario: Guidance emphasizes proactive co-change intelligence over redundant commit instructions
+    Given the before_agent_start extension hook
+    When guidance is injected into the system prompt
+    Then it highlights git-agent related for multi-file blast radius and test discovery
+    And it leaves commit mechanics to the tool guard and procedure
+
   Scenario: Full delegation to git-agent commit
     Given the agent is ready to commit changes
     When the agent follows procedures/commit.md
