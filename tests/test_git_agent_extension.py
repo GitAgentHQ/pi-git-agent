@@ -25,6 +25,7 @@ class TestGitAgentManifest(unittest.TestCase):
             data = json.load(f)
         self.assertEqual(data["name"], "pi-git-agent")
         self.assertIn("pi-package", data.get("keywords", []))
+        self.assertEqual(data.get("repository", {}).get("url"), "https://github.com/GitAgentHQ/pi-git-agent.git")
         self.assertNotIn("skills", data["pi"], "git-agent uses the /git-agent menu, not skills")
         self.assertIn("extensions", data["pi"])
         self.assertIn("procedures", data.get("files", []))
@@ -251,6 +252,34 @@ class TestSessionContextExtension(unittest.TestCase):
             content = f.read()
         self.assertNotIn("one-sentence", content)
         self.assertNotIn("concise one-sentence", content)
+
+    def test_procedures_delegate_fully_to_git_agent(self):
+        """commit procedures must explicitly instruct full delegation to git-agent."""
+        for name in ("commit.md", "commit-and-push.md"):
+            proc = os.path.join(GA_PKG_DIR, "procedures", name)
+            with open(proc, "r", encoding="utf-8") as f:
+                content = f.read()
+            self.assertIn("CRITICAL:", content)
+            self.assertIn("delegate", content.lower())
+            self.assertIn("git-agent commit", content)
+
+    def test_related_procedure_covers_agent_loop(self):
+        """related procedure must document the coding agent loop and --tests."""
+        proc = os.path.join(GA_PKG_DIR, "procedures", "related.md")
+        with open(proc, "r", encoding="utf-8") as f:
+            content = f.read()
+        self.assertIn("--tests", content)
+        self.assertIn("Loop", content)
+
+    def test_cli_reference_config_precedence(self):
+        """references/cli.md must reflect correct config precedence and session attribution distinction."""
+        ref = os.path.join(GA_PKG_DIR, "references", "cli.md")
+        with open(ref, "r", encoding="utf-8") as f:
+            content = f.read()
+        self.assertIn("Configuration Precedence", content)
+        self.assertIn("Local Git Config", content)
+        self.assertIn("set the inference", content.lower())
+        self.assertIn("Co-Authored-By", content)
 
 
 if __name__ == "__main__":
