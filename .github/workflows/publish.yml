@@ -20,6 +20,9 @@ jobs:
           # No registry-url / NODE_AUTH_TOKEN: the OIDC flow needs npm's own
           # auth, and setup-node's registry-url interferes with the trigger.
 
+      - name: Upgrade npm CLI for OIDC trusted publishing
+        run: npm install -g npm@latest
+
       # Publish only when the local version differs from the latest published
       # npm version. Idempotent: an already-published version is never
       # re-published. No tags needed.
