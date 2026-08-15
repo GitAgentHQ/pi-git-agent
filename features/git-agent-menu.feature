@@ -42,6 +42,17 @@ Feature: /git-agent command menu
     Then the skill prompt body is collapsed to "[Invoked skill: commit]"
     And the internal skill prompt instructions are omitted
 
+  Scenario: Full delegation to git-agent commit
+    Given the agent is ready to commit changes
+    When the agent follows procedures/commit.md
+    Then the agent builds intent from session_context
+    And the agent delegates staging, atomic splitting, auto-scoping, and hook validation directly to git-agent commit
+
+  Scenario: Configuration precedence distinguishes model inference from session attribution
+    Given the references/cli.md documentation
+    Then config precedence specifies CLI flags over local git config and global config
+    And agent session environment variables are documented as attribution-only
+
   Scenario: No skill surface remains
     Given the package tree
     Then there is no skills/ directory
