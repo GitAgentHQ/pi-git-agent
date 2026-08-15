@@ -271,6 +271,16 @@ class TestSessionContextExtension(unittest.TestCase):
         self.assertIn("--tests", content)
         self.assertIn("Loop", content)
 
+    def test_menu_guidance_prioritizes_cochange_intelligence(self):
+        """menu guidance in before_agent_start must highlight git-agent related and co-change analysis."""
+        ext_path = os.path.join(GA_PKG_DIR, "extensions", "menu.ts")
+        with open(ext_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        self.assertIn("Git Intelligence & Co-Change Analysis", content)
+        self.assertIn("git-agent related", content)
+        self.assertIn("--tests", content)
+        self.assertIn("Blast radius", content)
+
     def test_cli_reference_config_precedence(self):
         """references/cli.md must reflect correct config precedence and session attribution distinction."""
         ref = os.path.join(GA_PKG_DIR, "references", "cli.md")
