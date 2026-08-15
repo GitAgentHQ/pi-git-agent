@@ -65,6 +65,27 @@ function isInjectedProcedureMessage(text: string): boolean {
   return /^Run the "[^"]+" workflow\./.test(text);
 }
 
+/**
+ * Collapses expanded skill prompt blocks (<skill name="...">...</skill>)
+ * into a concise identifier ([Invoked skill: name]) so the AI knows which
+ * skill was called without polluting the commit intent with the full prompt.
+ * Preserves user-provided arguments after the skill block.
+ */
+export function collapseSkillInvocations(text: string): string {
+  // Replace <skill ...>...</skill> blocks with [Invoked skill: <name>]
+  let result = text.replace(
+    /<skill\b([^>]*)>[\s\S]*?<\/skill>/gi,
+    (_match, attrs) => {
+      const nameMatch = attrs.match(/\bname=["']([^"']+)["']/i);
+      const name = nameMatch ? nameMatch[1] : undefined;
+      return name ? `[Invoked skill: ${name}]` : "[Invoked skill]";
+    },
+  );
+  // Also handle raw /skill:name commands if unexpanded
+  result = result.replace(/^\/skill:([^\s]+)/gm, "[Invoked skill: $1]");
+  return result.replace(/\n{3,}/g, "\n\n").trim();
+}
+
 function isContextOrCommitEntry(entry: SessionEntry): boolean {
   if (!entry) return false;
 
@@ -152,9 +173,11 @@ export default function (pi: ExtensionAPI) {
         const entry = entries[i];
         if (entry.type !== "message") continue;
         if (entry.message?.role !== "user") continue;
-        const text = extractText(entry.message.content).trim();
+        let text = extractText(entry.message.content).trim();
         if (!text) continue;
         if (isInjectedProcedureMessage(text)) continue;
+        text = collapseSkillInvocations(text);
+        if (!text) continue;
         allUserMessages.push({ index: i, text });
       }
 
