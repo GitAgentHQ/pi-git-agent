@@ -42,14 +42,14 @@ const MENU: MenuItem[] = [
 ];
 
 const GUIDANCE = `
-## Git automation (git-agent)
+## Git Intelligence & Co-Change Analysis (git-agent)
 
-- **Commit**: follow {{PKG_DIR}}/procedures/commit.md — call the \`session_context\` tool first, build a 2-4 sentence intent from the session, then run \`git-agent commit --intent "<intent>"\` (add \`--no-stage\` when files are already staged; retry with \`--free\` on auth errors). Never run manual \`git status\`/\`git diff\`/\`git log\` before committing — delegate staging, atomic splitting, scope mining, and hook validation entirely to \`git-agent\`.
-- **Commit and push**: {{PKG_DIR}}/procedures/commit-and-push.md — same commit, then \`git push\`.
-- **Related files & tests**: {{PKG_DIR}}/procedures/related.md — run \`git-agent related [--tests|-o json] <paths>\` before multi-file edits or when choosing which tests to run.
-- **Init / optimize**: {{PKG_DIR}}/procedures/init.md — \`git-agent init --scope --force\`, \`--gitignore\`, or both.
+Use \`git-agent related\` proactively during multi-file work and testing — it mines git history for temporal co-change relations (offline, language-agnostic, zero API cost):
+- **Blast radius & coupled files**: before/during editing a feature, run \`git-agent related <files...> -o json\` (or with no args to evaluate working tree changes) to discover historically coupled files and the commit evidence explaining why they move together.
+- **Relevant test discovery**: run \`git-agent related <files...> --tests\` to identify which test suites to run for your changes.
+- **Pair with search**: spatial search (Grep/Glob) finds current symbols; \`git-agent related\` finds temporal co-changes with no textual links. Use both.
 
-The \`/git-agent\` menu lists the same workflows.
+For committing changes, use \`git-agent commit --intent "<intent>"\` (or the \`/git-agent\` menu). Staging, atomic splitting, and conventional message generation are handled automatically.
 `;
 
 async function pathExists(p: string): Promise<boolean> {
