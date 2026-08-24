@@ -117,14 +117,23 @@ class TestValidateCommitExtension(unittest.TestCase):
         self.assertIn("git\\\\s+add", content)
         self.assertIn("block: true", content)
 
-    def test_guard_reason_points_at_git_agent_menu_not_skills(self):
-        """The user-facing guard message must reference the /git-agent menu, not removed skills."""
+    def test_guard_reason_requires_bare_git_agent_intent(self):
+        """The guard must point straight at bare git-agent --intent, not the menu."""
         ext_path = os.path.join(GA_PKG_DIR, "extensions", "validate-commit.ts")
         with open(ext_path, "r", encoding="utf-8") as f:
             content = f.read()
-        self.assertIn("/git-agent menu", content)
-        self.assertNotIn("/commit or /commit-and-push skill", content)
+        self.assertIn("git-agent --intent", content)
+        self.assertIn("session_context", content)
+        self.assertNotIn("/git-agent menu", content)
         self.assertNotIn("Use the /commit skill", content)
+
+    def test_guard_exempts_any_git_agent_chain(self):
+        """A chained git-agent invocation (bare or subcommand) bypasses the git add block."""
+        ext_path = os.path.join(GA_PKG_DIR, "extensions", "validate-commit.ts")
+        with open(ext_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        # Exemption matches command-position git-agent, not just git-agent commit
+        self.assertIn("pos}git-agent(?:\\\\s|$)", content)
 
 
 class TestSessionContextExtension(unittest.TestCase):
@@ -156,6 +165,15 @@ class TestSessionContextExtension(unittest.TestCase):
         self.assertIn("isInjectedProcedureMessage", content)
         self.assertIn('Run the "', content)
         self.assertIn("workflow", content)
+
+    def test_commit_boundary_recognizes_bare_invocation(self):
+        """The commit-boundary check must match bare `git-agent --intent ...` as well as
+        the legacy `git-agent commit` subcommand form."""
+        ext_path = os.path.join(GA_PKG_DIR, "extensions", "session-context.ts")
+        with open(ext_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        self.assertIn("isGitAgentCommit", content)
+        self.assertIn('--intent', content)
 
     def test_session_context_collapses_skill_invocations(self):
         """session_context must collapse expanded skill prompt blocks into concise [Invoked skill: ...]
@@ -261,7 +279,8 @@ class TestSessionContextExtension(unittest.TestCase):
                 content = f.read()
             self.assertIn("CRITICAL:", content)
             self.assertIn("delegate", content.lower())
-            self.assertIn("git-agent commit", content)
+            self.assertIn("git-agent --intent", content)
+            self.assertNotIn("git-agent commit", content)
 
     def test_related_procedure_covers_agent_loop(self):
         """related procedure must document the coding agent loop and --tests."""
