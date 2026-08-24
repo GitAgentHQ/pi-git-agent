@@ -8,9 +8,9 @@
 Create an atomic conventional commit with `git-agent`.
 
 CRITICAL:
-- Do NOT run `git status`, `git diff`, `git log`, or raw `git add`/`git commit` before `git-agent commit`.
-- Fully delegate staging, multi-commit splitting (up to 5 atomic commits), auto-scope mining, active model attribution inference (`PI_MODEL`, etc.), and hook validation/retry directly to `git-agent`.
-- Execute `git-agent commit` directly.
+- Do NOT run `git status`, `git diff`, `git log`, or raw `git add`/`git commit` before committing.
+- Fully delegate staging, multi-commit splitting (up to 5 atomic commits), auto-scope mining, active model attribution inference (`PI_MODEL`, etc.), and hook validation/retry directly to the bare `git-agent` command.
+- Execute bare `git-agent --intent` directly (never the legacy `commit` subcommand).
 
 ## Execution
 
@@ -23,15 +23,15 @@ CRITICAL:
 3. Pass `--co-author "<co-author>"` if explicitly requested by the user. (Active session models are inferred automatically from environment variables).
 4. Run primary commit command:
    ```bash
-   git-agent commit --intent "<intent>"
+   git-agent --intent "<intent>"
    ```
 5. If specific files are already staged and you want to commit only those, pass `--no-stage`:
    ```bash
-   git-agent commit --no-stage --intent "<intent>"
+   git-agent --no-stage --intent "<intent>"
    ```
 6. On auth error (401 / missing key), retry with `--free`:
    ```bash
-   git-agent commit --free --intent "<intent>"
+   git-agent --free --intent "<intent>"
    ```
 7. On planner timeout (`LLM planner timed out`), raise the budget via `git-agent config set request_timeout 5m` or cap diff with `--max-diff-lines <n>` / `--max-diff-bytes <n>`.
 8. When scripting or programmatically reading results, add `-o json`.
