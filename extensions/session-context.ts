@@ -86,6 +86,11 @@ export function collapseSkillInvocations(text: string): string {
   return result.replace(/\n{3,}/g, "\n\n").trim();
 }
 
+function isGitAgentCommit(command: unknown): boolean {
+  if (typeof command !== "string") return false;
+  return command.includes("git-agent commit") || /\bgit-agent(?:\s+-\S+)*\s+--intent\b/.test(command);
+}
+
 function isContextOrCommitEntry(entry: SessionEntry): boolean {
   if (!entry) return false;
 
@@ -96,7 +101,7 @@ function isContextOrCommitEntry(entry: SessionEntry): boolean {
       const args =
         (entry as { args?: { command?: string }; input?: { command?: string } }).args ||
         (entry as { input?: { command?: string } }).input;
-      if (args?.command && typeof args.command === "string" && args.command.includes("git-agent commit")) {
+      if (args?.command && typeof args.command === "string" && isGitAgentCommit(args.command)) {
         return true;
       }
     }
@@ -114,7 +119,7 @@ function isContextOrCommitEntry(entry: SessionEntry): boolean {
             const args =
               (call as { args?: { command?: string }; input?: { command?: string } }).args ||
               (call as { input?: { command?: string } }).input;
-            if (args?.command && typeof args.command === "string" && args.command.includes("git-agent commit")) {
+            if (args?.command && typeof args.command === "string" && isGitAgentCommit(args.command)) {
               return true;
             }
           }
@@ -133,7 +138,7 @@ function isContextOrCommitEntry(entry: SessionEntry): boolean {
               const args =
                 (part as { args?: { command?: string }; input?: { command?: string } }).args ||
                 (part as { input?: { command?: string } }).input;
-              if (args?.command && typeof args.command === "string" && args.command.includes("git-agent commit")) {
+              if (args?.command && typeof args.command === "string" && isGitAgentCommit(args.command)) {
                 return true;
               }
             }

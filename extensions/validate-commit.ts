@@ -13,13 +13,13 @@ export default function (pi: ExtensionAPI) {
 
       const reCommit = new RegExp(`${pos}git\\s+commit${end}`);
       const reAdd = new RegExp(`${pos}git\\s+add${end}`);
-      const reAgent = new RegExp(`${pos}git-agent\\s+commit${end}`);
+      const reAgent = new RegExp(`${pos}git-agent(?:\\s|$)`);
 
       if (reCommit.test(cmd)) {
         return {
           block: true,
           reason:
-            "Use the /git-agent menu's Commit workflow (or the git-agent CLI) instead of raw git commit. It creates atomic AI commits with validation.",
+            'Raw git commit is blocked. Commit with git-agent instead: gather session context (session_context tool), then run git-agent --intent "<intent assembled from that context>". It stages, splits into atomic commits, and validates.',
         };
       }
 
@@ -27,7 +27,7 @@ export default function (pi: ExtensionAPI) {
         return {
           block: true,
           reason:
-            "Use the /git-agent menu's Commit workflow instead of raw git add. For folder-scoped staging, chain it with git-agent: git add <path> && git-agent commit --no-stage ...",
+            'Raw git add is blocked. For folder-scoped staging, chain it with git-agent: git add <path> && git-agent --no-stage --intent "<intent>"',
         };
       }
     }

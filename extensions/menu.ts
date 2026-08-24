@@ -49,7 +49,7 @@ Use \`git-agent related\` proactively during multi-file work and testing — it 
 - **Relevant test discovery**: run \`git-agent related <files...> --tests\` to identify which test suites to run for your changes.
 - **Pair with search**: spatial search (Grep/Glob) finds current symbols; \`git-agent related\` finds temporal co-changes with no textual links. Use both.
 
-For committing changes, use \`git-agent commit --intent "<intent>"\` (or the \`/git-agent\` menu). Staging, atomic splitting, and conventional message generation are handled automatically.
+For committing changes, use \`git-agent --intent "<intent>"\`. Staging, atomic splitting, and conventional message generation are handled automatically.
 `;
 
 async function pathExists(p: string): Promise<boolean> {
