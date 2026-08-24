@@ -23,7 +23,7 @@ Feature: /git-agent command menu
 
   Scenario: Natural language still routes without a skill
     When the user asks to "commit this"
-    Then the agent follows procedures/commit.md (session_context first, then git-agent commit)
+    Then the agent follows procedures/commit.md (session_context first, then bare git-agent --intent)
 
   Scenario: session_context excludes the menu's own injected procedure
     Given the user opened the /git-agent menu and picked "Commit changes"
@@ -48,11 +48,32 @@ Feature: /git-agent command menu
     Then it highlights git-agent related for multi-file blast radius and test discovery
     And it leaves commit mechanics to the tool guard and procedure
 
-  Scenario: Full delegation to git-agent commit
+  Scenario: Guard blocks raw git commit and requires git-agent --intent directly
+    Given the agent tries to run raw "git commit"
+    When the tool_call extension inspects the bash command
+    Then the call is blocked with a reason requiring "git-agent --intent \"<intent>\"" built from session context
+    And the reason does not mention the /git-agent menu
+
+  Scenario: Guard blocks raw git add unless chained with git-agent
+    Given the agent tries to run raw "git add src/"
+    When the tool_call extension inspects the bash command
+    Then the call is blocked with a chained alternative "git add <path> && git-agent --no-stage --intent ..."
+
+  Scenario: Guard passes any command chain that invokes git-agent
+    When the agent runs "git add src/auth.ts && git-agent --no-stage --intent \"update auth\""
+    Then the call is not blocked
+
+  Scenario: Commit intent reset recognizes both bare and subcommand invocations
+    Given a session bash entry ran "git-agent --intent \"ship it\""
+    When session_context decides which entries are already-consumed context
+    Then the bare invocation counts as a commit boundary
+    And so does "git-agent commit --intent \"ship it\""
+
+  Scenario: Full delegation to bare git-agent --intent
     Given the agent is ready to commit changes
     When the agent follows procedures/commit.md
     Then the agent builds intent from session_context
-    And the agent delegates staging, atomic splitting, auto-scoping, and hook validation directly to git-agent commit
+    And the agent delegates staging, atomic splitting, auto-scoping, and hook validation directly to bare "git-agent --intent"
 
   Scenario: Configuration precedence distinguishes model inference from session attribution
     Given the references/cli.md documentation
