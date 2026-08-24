@@ -12,10 +12,7 @@ Provider mapping is not required: a session model that maps to no known provider
 
 Manual `--co-author` flags may still be passed to override or append specific co-authors:
 ```bash
-git-agent commit --intent "<intent>" --co-author "<co-author>"
+git-agent --intent "<intent>" --co-author "<co-author>"
 ```
 
-To suppress co-author trailers entirely:
-```bash
-git-agent commit --no-attribution
-```
+There is no suppression flag: model co-author trailers are inferred automatically whenever a session-model environment variable (`PI_MODEL`, etc.) is set. To commit without them, clear those variables for the invocation.
