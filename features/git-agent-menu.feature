@@ -7,6 +7,12 @@ Feature: /git-agent command menu
     Given the pi-git-agent package is installed
     And package.json registers extensions only (no skills)
 
+  Scenario: Package uses a root index entrypoint
+    Given the pi-git-agent package is installed
+    Then package.json points Pi at ./index.ts
+    And index.ts delegates to src/index.ts
+    And src/index.ts registers the menu, session context, and commit guard extensions
+
   Scenario: Menu lists all workflows
     When the user types /git-agent
     Then a select dialog shows Commit changes, Commit and push, Init / optimize, and Related files & tests
