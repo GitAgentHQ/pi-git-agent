@@ -9,5 +9,5 @@
     "noEmit": true,
     "types": []
   },
-  "include": ["extensions/*.ts"]
+  "include": ["index.ts", "src/**/*.ts", "extensions/**/*.ts"]
 }

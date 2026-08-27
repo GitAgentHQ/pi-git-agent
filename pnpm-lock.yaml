@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@fradser/pi-kit':
-        specifier: ^0.4.0
-        version: 0.4.0
+        specifier: ^0.4.1
+        version: 0.4.1
     devDependencies:
       '@earendil-works/pi-coding-agent':
         specifier: ^0.84.1
@@ -171,8 +171,8 @@ packages:
     resolution: {integrity: sha512-fS6OEQKEEALnKa6Uw8LcgZZ+9CWck7f3MQSCETQp6leUgIFwMEDtKmOUnL9nsYm+RIPmy7OmplVxYRbV6hiaFg==}
     engines: {node: '>=22.19.0'}
 
-  '@fradser/pi-kit@0.4.0':
-    resolution: {integrity: sha512-ZXE9A+Umv0qqdC9nkHpOPC0Wuge7IB9MYgVgwSeKyQdGF/DD06wC9nXrjiJsAX/jmIfx7VKSBZXpa/AwJaVQ4w==}
+  '@fradser/pi-kit@0.4.1':
+    resolution: {integrity: sha512-MFtj+A1WJ6T/W5AHqqw+z+GOj+tF0loIVNePbFPecr9dkQTBPVW8LeSedQ6eZ+s9nr4yWE/sr53WMQfU6qg4WQ==}
 
   '@google/genai@1.52.0':
     resolution: {integrity: sha512-gwSvbpiN/17O9TbsqSsE/OzZcpv5Fo4RQjdngGgogtuB9RsyJ8ZHhX5KjHj1bp5N9snN2eK8LDGXSaWW2hof8Q==}
@@ -1062,7 +1062,7 @@ snapshots:
       get-east-asian-width: 1.6.0
       marked: 18.0.5
 
-  '@fradser/pi-kit@0.4.0': {}
+  '@fradser/pi-kit@0.4.1': {}
 
   '@google/genai@1.52.0':
     dependencies:
