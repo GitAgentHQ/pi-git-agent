@@ -42,32 +42,52 @@ Feature: /git-agent command menu
     Then the skill prompt body is collapsed to "[Invoked skill: commit]"
     And the internal skill prompt instructions are omitted
 
-  Scenario: Guidance emphasizes proactive co-change intelligence over redundant commit instructions
+  Scenario: No before_agent_start guidance is injected
     Given the before_agent_start extension hook
-    When guidance is injected into the system prompt
-    Then it highlights git-agent related for multi-file blast radius and test discovery
-    And it leaves commit mechanics to the tool guard and procedure
+    When the extension starts
+    Then no Git Intelligence & Co-Change Analysis guidance is injected into the system prompt
+    And commit mechanics remain in the post-tool guard and procedure
 
-  Scenario: Guard blocks raw git commit and requires git-agent --intent directly
+  Scenario: Guard blocks raw git commit and prepares intent context locally
     Given the agent tries to run raw "git commit"
     When the tool_call extension inspects the bash command
     Then the call is blocked with a reason requiring "git-agent --intent \"<intent>\"" built from session context
+    And the reason includes locally extracted session context
+    And the reason directly tells the agent to run git-agent without calling session_context
     And the reason does not mention the /git-agent menu
 
-  Scenario: Guard blocks raw git add unless chained with git-agent
+  Scenario: Guard allows raw git add
     Given the agent tries to run raw "git add src/"
     When the tool_call extension inspects the bash command
-    Then the call is blocked with a chained alternative "git add <path> && git-agent --no-stage --intent ..."
-
-  Scenario: Guard passes any command chain that invokes git-agent
-    When the agent runs "git add src/auth.ts && git-agent --no-stage --intent \"update auth\""
     Then the call is not blocked
+
+  Scenario: Guard context shares session_context extraction and has a bounded length
+    Given the guard handles a raw "git commit" tool call
+    When it extracts session context locally
+    Then it uses the same extraction function as the session_context tool
+    And it does not ask the agent to call session_context again
+    And the context included in the block reason is length-bounded
 
   Scenario: Commit intent reset recognizes both bare and subcommand invocations
     Given a session bash entry ran "git-agent --intent \"ship it\""
     When session_context decides which entries are already-consumed context
     Then the bare invocation counts as a commit boundary
     And so does "git-agent commit --intent \"ship it\""
+
+  Scenario: session_context renders a compact monitor-style lifecycle row
+    Given the session_context tool is called
+    When it extracts requests from the session
+    Then it returns the shared bounded context text
+    And its call slot is empty
+    And its result row uses pi-kit's lifecycle label and expansion helper
+    And the collapsed row appends the configured expansion key
+    And expanded rendering reveals bounded context details
+    And an empty session uses the subject `no user requests`
+
+  Scenario: session_context stays quiet when the session has no user messages
+    Given a session with no extractable user messages
+    When session_context completes
+    Then the collapsed row reads "[context] gathered · no user requests" instead of a full report
 
   Scenario: Full delegation to bare git-agent --intent
     Given the agent is ready to commit changes
