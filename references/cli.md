@@ -18,7 +18,7 @@ git-agent commit
 git-agent commit --intent "refactor auth token handling"
 
 # Pre-staged files only (skip auto-staging)
-git add src/auth.ts && git-agent commit --no-stage --intent "update auth token"
+git add src/auth.ts && git-agent --no-stage --intent "update auth token"
 
 # Override model or gateway
 git-agent commit --model claude-3-5-sonnet
