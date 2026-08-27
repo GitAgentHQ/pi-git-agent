@@ -28,15 +28,37 @@ class TestGitAgentManifest(unittest.TestCase):
         self.assertEqual(data.get("repository", {}).get("url"), "https://github.com/GitAgentHQ/pi-git-agent.git")
         self.assertNotIn("skills", data["pi"], "git-agent uses the /git-agent menu, not skills")
         self.assertIn("extensions", data["pi"])
+        self.assertEqual(data["pi"]["extensions"], ["./index.ts"])
+        self.assertIn("index.ts", data.get("files", []))
         self.assertIn("procedures", data.get("files", []))
         self.assertIn("@earendil-works/pi-coding-agent", data.get("peerDependencies", {}))
         self.assertIn("typebox", data.get("peerDependencies", {}))
-        self.assertEqual(data.get("dependencies", {}).get("@fradser/pi-kit"), "^0.4.0")
+        self.assertEqual(data.get("dependencies", {}).get("@fradser/pi-kit"), "^0.4.1")
         self.assertNotIn("hooks", data.get("files", []))
         self.assertNotIn("pretool-hook", data.get("keywords", []))
 
 
 class TestGitAgentMenu(unittest.TestCase):
+    def test_root_index_delegates_to_src_entrypoint(self):
+        """The package root re-exports a src entrypoint, like pi-packages."""
+        index_path = os.path.join(GA_PKG_DIR, "index.ts")
+        self.assertTrue(os.path.exists(index_path), "index.ts is missing")
+        with open(index_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        self.assertEqual(content.strip(), 'export { default } from "./src/index.ts";')
+
+        src_path = os.path.join(GA_PKG_DIR, "src", "index.ts")
+        self.assertTrue(os.path.exists(src_path), "src/index.ts is missing")
+        with open(src_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        self.assertIn('from "../extensions/menu.ts"', content)
+        self.assertIn('from "../extensions/session-context.ts"', content)
+        self.assertIn('from "../extensions/validate-commit.ts"', content)
+        self.assertIn("export default", content)
+        self.assertIn("registerMenu(pi)", content)
+        self.assertIn("registerSessionContext(pi)", content)
+        self.assertIn("registerValidateCommit(pi)", content)
+
     def test_skills_directory_removed(self):
         """The skill surface is gone — workflows live in procedures/ behind the /git-agent menu."""
         self.assertFalse(os.path.exists(os.path.join(GA_PKG_DIR, "skills")), "skills/ must be removed")
