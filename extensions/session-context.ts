@@ -1,5 +1,5 @@
 import { keyHint, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { Container, Text, truncateToWidth } from "@earendil-works/pi-tui";
+import { Container, Text, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import { eventToolLifecycle, renderToolLifecycle, safeDisplayText } from "@fradser/pi-kit";
 import { Type } from "typebox";
 import {
@@ -70,6 +70,7 @@ export default function (pi: ExtensionAPI) {
             expandHint: keyHint("app.tools.expand", "to expand"),
             theme,
             fit: truncateToWidth,
+            visibleWidth,
           }),
       };
     },
