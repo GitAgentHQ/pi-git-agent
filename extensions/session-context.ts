@@ -1,17 +1,14 @@
-/**
- * Session context extraction — feeds the current session's user requests
- * and decisions into the commit flow.
- *
- * git-agent's commit message generator is conversation-blind: it only sees
- * `--intent` plus the git diff. This tool bridges that gap by reading the
- * live session entries (the same JSONL that persists the conversation) and
- * returning the recent user requests, so the agent can build a commit intent
- * grounded in what the user actually asked for — not a compressed one-liner.
- */
-
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { truncateTail, DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES } from "@earendil-works/pi-coding-agent";
+import { keyHint, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { Container, Text, truncateToWidth } from "@earendil-works/pi-tui";
+import { eventToolLifecycle, renderToolLifecycle, safeDisplayText } from "@fradser/pi-kit";
 import { Type } from "typebox";
+import {
+  collapseSkillInvocations,
+  extractSessionContext,
+  type SessionEntry,
+} from "./lib/session-context-core";
+
+export { collapseSkillInvocations, extractSessionContext } from "./lib/session-context-core";
 
 export const SessionContextParams = Type.Object({
   maxMessages: Type.Optional(
@@ -36,128 +33,14 @@ export const SessionContextParams = Type.Object({
   ),
 });
 
-type SessionEntry = { type?: string; message?: { role?: string; content?: unknown } };
-
-function extractText(content: unknown): string {
-  if (typeof content === "string") return content;
-  if (Array.isArray(content)) {
-    return content
-      .filter(
-        (part): part is { type: string; text: string } =>
-          !!part &&
-          typeof part === "object" &&
-          (part as { type?: unknown }).type === "text" &&
-          typeof (part as { text?: unknown }).text === "string",
-      )
-      .map((part) => part.text)
-      .join("\n");
-  }
-  return "";
-}
-
-/**
- * True for procedure messages injected by the /git-agent menu via
- * menus via pi.sendUserMessage — they always start with `Run the "<label>"
- * workflow.` and are the agent's own commands, not the user's requests, so
- * they must not pollute the commit intent.
- */
-function isInjectedProcedureMessage(text: string): boolean {
-  return /^Run the "[^"]+" workflow\./.test(text);
-}
-
-/**
- * Collapses expanded skill prompt blocks (<skill name="...">...</skill>)
- * into a concise identifier ([Invoked skill: name]) so the AI knows which
- * skill was called without polluting the commit intent with the full prompt.
- * Preserves user-provided arguments after the skill block.
- */
-export function collapseSkillInvocations(text: string): string {
-  // Replace <skill ...>...</skill> blocks with [Invoked skill: <name>]
-  let result = text.replace(
-    /<skill\b([^>]*)>[\s\S]*?<\/skill>/gi,
-    (_match, attrs) => {
-      const nameMatch = attrs.match(/\bname=["']([^"']+)["']/i);
-      const name = nameMatch ? nameMatch[1] : undefined;
-      return name ? `[Invoked skill: ${name}]` : "[Invoked skill]";
-    },
-  );
-  // Also handle raw /skill:name commands if unexpanded
-  result = result.replace(/^\/skill:([^\s]+)/gm, "[Invoked skill: $1]");
-  return result.replace(/\n{3,}/g, "\n\n").trim();
-}
-
-function isGitAgentCommit(command: unknown): boolean {
-  if (typeof command !== "string") return false;
-  return command.includes("git-agent commit") || /\bgit-agent(?:\s+-\S+)*\s+--intent\b/.test(command);
-}
-
-function isContextOrCommitEntry(entry: SessionEntry): boolean {
-  if (!entry) return false;
-
-  if (entry.type === "tool_call" || entry.type === "tool_result") {
-    const name = (entry as { name?: string }).name;
-    if (name === "session_context") return true;
-    if (name === "bash") {
-      const args =
-        (entry as { args?: { command?: string }; input?: { command?: string } }).args ||
-        (entry as { input?: { command?: string } }).input;
-      if (args?.command && typeof args.command === "string" && isGitAgentCommit(args.command)) {
-        return true;
-      }
-    }
-  }
-
-  if (entry.type === "message" && entry.message) {
-    const msg = entry.message as { role?: string; content?: unknown; toolCalls?: unknown[] };
-
-    if (Array.isArray(msg.toolCalls)) {
-      for (const call of msg.toolCalls) {
-        if (call && typeof call === "object") {
-          const name = (call as { name?: string }).name;
-          if (name === "session_context") return true;
-          if (name === "bash") {
-            const args =
-              (call as { args?: { command?: string }; input?: { command?: string } }).args ||
-              (call as { input?: { command?: string } }).input;
-            if (args?.command && typeof args.command === "string" && isGitAgentCommit(args.command)) {
-              return true;
-            }
-          }
-        }
-      }
-    }
-
-    if (Array.isArray(msg.content)) {
-      for (const part of msg.content) {
-        if (part && typeof part === "object") {
-          const type = (part as { type?: string }).type;
-          const name = (part as { name?: string }).name;
-          if (type === "toolCall" || type === "tool_use" || type === "tool_result") {
-            if (name === "session_context") return true;
-            if (name === "bash") {
-              const args =
-                (part as { args?: { command?: string }; input?: { command?: string } }).args ||
-                (part as { input?: { command?: string } }).input;
-              if (args?.command && typeof args.command === "string" && isGitAgentCommit(args.command)) {
-                return true;
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  return false;
-}
-
 export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "session_context",
     label: "Session Context",
     description: [
       "Extract recent user requests and decisions from the current session.",
-      "Deduplicates automatically to only include requests since the last commit or context call.",
+      "Primary value: after context compaction, earlier requests are no longer in the model window - this recovers them.",
+      "Each call also marks the commit boundary; later calls only return messages since the last commit or call.",
       "Use before committing: build the commit intent from this context instead of a one-line summary,",
       "so the commit message reflects what the user asked for and why.",
     ].join(" "),
@@ -166,80 +49,48 @@ export default function (pi: ExtensionAPI) {
       "Use session_context before committing to ground the commit intent in what the user actually asked for, not a one-line summary.",
     ],
     parameters: SessionContextParams,
+    renderShell: "self",
+    renderCall: () => new Container(),
+    renderResult(result, { expanded }, theme, context) {
+      const text = result.content.find((part) => part.type === "text")?.text ?? "";
+      if (context.isError) {
+        return new Text(theme.fg("error", firstNonEmptyLine(text)), 0, 0);
+      }
+
+      const details = result.details as { count?: number; deduplicated?: boolean } | undefined;
+      const subject = contextSubject(details?.count ?? 0, details?.deduplicated ?? false);
+      const bodyLines = safeDisplayText(text).split("\n").filter((line) => line.trim()).slice(0, 50);
+      const spec = eventToolLifecycle("context", subject, { label: "gathered", details: bodyLines });
+      return {
+        invalidate: () => {},
+        render: (width: number) =>
+          renderToolLifecycle(spec, {
+            width,
+            expanded,
+            expandHint: keyHint("app.tools.expand", "to expand"),
+            theme,
+            fit: truncateToWidth,
+          }),
+      };
+    },
 
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       const entries = (ctx.sessionManager.getEntries() as SessionEntry[]) ?? [];
-      const max = params.maxMessages ?? 15;
-      const tailChars = params.tailChars ?? 600;
-      const sinceLastCall = params.sinceLastCall ?? true;
-
-      const allUserMessages: { index: number; text: string }[] = [];
-      for (let i = 0; i < entries.length; i++) {
-        const entry = entries[i];
-        if (entry.type !== "message") continue;
-        if (entry.message?.role !== "user") continue;
-        let text = extractText(entry.message.content).trim();
-        if (!text) continue;
-        if (isInjectedProcedureMessage(text)) continue;
-        text = collapseSkillInvocations(text);
-        if (!text) continue;
-        allUserMessages.push({ index: i, text });
-      }
-
-      if (allUserMessages.length === 0) {
-        return {
-          content: [{ type: "text", text: "No user messages found in the current session." }],
-          details: { count: 0 },
-        };
-      }
-
-      let selectedUserMessages = allUserMessages;
-      let isDeduplicated = false;
-
-      if (sinceLastCall) {
-        const lastUserIndex = allUserMessages[allUserMessages.length - 1].index;
-
-        let maxPreviousCutoffIndex = -1;
-        for (let i = 0; i < entries.length; i++) {
-          if (i < lastUserIndex && isContextOrCommitEntry(entries[i])) {
-            if (i > maxPreviousCutoffIndex) {
-              maxPreviousCutoffIndex = i;
-            }
-          }
-        }
-
-        if (maxPreviousCutoffIndex >= 0) {
-          const newMessages = allUserMessages.filter((m) => m.index > maxPreviousCutoffIndex);
-          if (newMessages.length > 0) {
-            selectedUserMessages = newMessages;
-            isDeduplicated = true;
-          }
-        }
-      }
-
-      const recent = selectedUserMessages.slice(-max).map((m) => m.text);
-
-      const lines: string[] = [
-        "## Recent user requests (session context)",
-        isDeduplicated
-          ? `Showing ${recent.length} new user message(s) since last commit/context call — use these to build a detailed commit intent (what + why + verification):`
-          : `Last ${recent.length} user message(s) — use these to build a detailed commit intent (what + why + verification):`,
-        "",
-      ];
-      recent.forEach((message, index) => {
-        const body = message.length > tailChars ? `${message.slice(0, tailChars)}... (truncated)` : message;
-        lines.push(`### Request ${index + 1}`, body, "");
-      });
-
-      const text = lines.join("\n");
-      const output =
-        text.length <= DEFAULT_MAX_BYTES
-          ? text
-          : truncateTail(text, { maxLines: DEFAULT_MAX_LINES, maxBytes: DEFAULT_MAX_BYTES }).content;
+      const result = extractSessionContext(entries, params);
       return {
-        content: [{ type: "text", text: output }],
-        details: { count: recent.length, deduplicated: isDeduplicated },
+        content: [{ type: "text", text: result.text }],
+        details: { count: result.count, deduplicated: result.deduplicated },
       };
     },
   });
+}
+
+function firstNonEmptyLine(text: string): string {
+  return safeDisplayText(text).split("\n").find((line) => line.trim())?.trim() || "Tool failed.";
+}
+
+function contextSubject(count: number, deduplicated: boolean): string {
+  if (count === 0) return "no user requests";
+  const requests = `${count} request${count === 1 ? "" : "s"}`;
+  return deduplicated ? `${requests} since last commit` : `${requests} in session`;
 }

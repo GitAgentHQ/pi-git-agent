@@ -14,10 +14,9 @@
  * via pi.sendUserMessage — no skill doc, no model-side path lookup.
  * `{{PKG_DIR}}` is substituted with the resolved package dir at send time.
  *
- * before_agent_start injects a short guidance block so natural-language
- * requests ("commit this", "commit and push") still route to the procedures
- * even without a skill surface. `/git-agent <keyword>` (e.g. `/git-agent
- * commit --co-author "x"`) runs that workflow directly, skipping the menu.
+ * `/git-agent <keyword>` (e.g. `/git-agent commit --co-author "x"`) runs
+ * that workflow directly, skipping the menu. Commit enforcement is provided
+ * by the post-tool harness guard rather than a system-prompt injection.
  */
 
 import fs from "fs/promises";
@@ -40,17 +39,6 @@ const MENU: MenuItem[] = [
   { label: "Init / optimize", procedure: "init.md", keywords: ["init"] },
   { label: "Related files & tests", procedure: "related.md", keywords: ["related"] },
 ];
-
-const GUIDANCE = `
-## Git Intelligence & Co-Change Analysis (git-agent)
-
-Use \`git-agent related\` proactively during multi-file work and testing — it mines git history for temporal co-change relations (offline, language-agnostic, zero API cost):
-- **Blast radius & coupled files**: before/during editing a feature, run \`git-agent related <files...> -o json\` (or with no args to evaluate working tree changes) to discover historically coupled files and the commit evidence explaining why they move together.
-- **Relevant test discovery**: run \`git-agent related <files...> --tests\` to identify which test suites to run for your changes.
-- **Pair with search**: spatial search (Grep/Glob) finds current symbols; \`git-agent related\` finds temporal co-changes with no textual links. Use both.
-
-For committing changes, use \`git-agent --intent "<intent>"\`. Staging, atomic splitting, and conventional message generation are handled automatically.
-`;
 
 async function pathExists(p: string): Promise<boolean> {
   try {
@@ -138,10 +126,5 @@ export default function (pi: ExtensionAPI) {
         deliverAs: "followUp",
       });
     },
-  });
-
-  pi.on("before_agent_start", async (event) => {
-    const pkgDir = await resolvePackageDir();
-    return { systemPrompt: event.systemPrompt + GUIDANCE.replaceAll("{{PKG_DIR}}", pkgDir) };
   });
 }
