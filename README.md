@@ -10,7 +10,7 @@ A Pi coding-agent package that turns `git-agent` into a native `/git-agent` comm
 
 - **Atomic Commits**: splits staged changes into up to 5 logically distinct commits with AI-generated conventional messages (`git-agent commit`).
 - **Co-change Relations**: mined from git history to reveal files and test suites that change together (`git-agent related`).
-- **Native Extension Guard**: `extensions/validate-commit.ts` intercepts raw `git commit` tool calls, locally embeds bounded session context in the block reason, and points the agent directly at `git-agent --intent`. Normal `git add` calls remain allowed.
+- **Native Extension Guard**: `extensions/validate-commit.ts` intercepts raw `git commit` tool calls, locally embeds bounded session context in the block reason, and points the agent directly at `git-agent --intent`. Normal `git add` calls remain allowed. The root `index.ts` composes all extension modules for Pi.
 - **Session-Grounded Commits**: `extensions/session-context.ts` exposes the `session_context` tool, which reads the live session entries so commit intents are built from what the user actually asked for, not a compressed one-liner.
 - **Automatic Model Identity Resolution**: `git-agent` auto-detects agent environment variables (`PI_MODEL`, `CLAUDE_CODE_MODEL`, `CODEX_MODEL`, `MODEL`), so no manual co-author flags are needed.
 
@@ -52,6 +52,9 @@ Requires the `git-agent` CLI on PATH (built from the sibling `git-agent-cli/` di
 
 ```
 pi-git-agent/
+├── index.ts                  # Pi package entrypoint
+├── src/
+│   └── index.ts              # extension composition root
 ├── extensions/
 │   ├── menu.ts               # /git-agent command menu
 │   ├── session-context.ts    # session_context tool (intent source for commits)

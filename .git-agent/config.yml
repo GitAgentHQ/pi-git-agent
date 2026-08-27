@@ -9,3 +9,11 @@ scopes:
       description: CLI delegation and attribution reference documentation in references/; does not cover step-by-step procedures.
     - name: tests
       description: Automated extension behavior tests in tests/; does not cover Gherkin feature specifications.
+    - name: ext
+      description: Pi extension commands, menus, and commit validation logic in extensions/; does not cover behavioral specifications.
+    - name: proc
+      description: Git workflow and operational guides in procedures/; does not cover CLI reference material.
+    - name: ref
+      description: CLI delegation and attribution reference material in references/; does not cover step-by-step procedures.
+    - name: src
+      description: Core source code and logic implemented in src/; does not cover extension-specific modules.

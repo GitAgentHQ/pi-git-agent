@@ -10,7 +10,7 @@
 
 - **原子提交**:把暂存的改动拆成最多 5 个逻辑独立的提交,用 AI 生成 Conventional Commit 消息(`git-agent commit`)。
 - **共同变更分析**:从 git 历史中挖掘一起变化的文件和测试套件(`git-agent related`)。
-- **原生扩展防护**:`extensions/validate-commit.ts` 只拦截裸 `git commit` 工具调用,在阻断原因中本地注入有长度限制的 session context,并直接引导代理执行 `git-agent --intent`;普通 `git add` 调用保持允许。
+- **原生扩展防护**:`extensions/validate-commit.ts` 只拦截裸 `git commit` 工具调用,在阻断原因中本地注入有长度限制的 session context,并直接引导代理执行 `git-agent --intent`;普通 `git add` 调用保持允许。根目录 `index.ts` 负责为 Pi 组合注册所有扩展模块。
 - **会话驱动的提交**:`extensions/session-context.ts` 提供 `session_context` 工具,读取当前会话记录,让提交意图来自用户实际提出的请求,而不是一句压缩的话。
 - **自动模型身份识别**:`git-agent` 自动检测代理环境变量(`PI_MODEL`、`CLAUDE_CODE_MODEL`、`CODEX_MODEL`、`MODEL`),无需手动传递 co-author 标志。
 
@@ -52,6 +52,9 @@ pi install npm:pi-git-agent
 
 ```
 pi-git-agent/
+├── index.ts                  # Pi 包入口
+├── src/
+│   └── index.ts              # 扩展组合根
 ├── extensions/
 │   ├── menu.ts               # /git-agent 命令菜单
 │   ├── session-context.ts    # session_context 工具(提交意图来源)
