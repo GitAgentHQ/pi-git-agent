@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-Pi coding-agent package that exposes git-agent workflows as a native `/git-agent` menu. `extensions/` holds the three entry points: `menu.ts` (command menu plus system-prompt guidance injection), `session-context.ts` (the `session_context` tool feeding commit intents), and `validate-commit.ts` (the tool-call guard blocking raw `git add`/`git commit`). `procedures/*.md` are inline workflow documents embedded verbatim into follow-up messages; `references/` are appendix docs linked from procedures via `{{PKG_DIR}}`. `features/git-agent-menu.feature` holds the Gherkin behavior specs; `tests/test_git_agent_extension.py` asserts source-level contracts. There is no shared pi-kit runtime dependency here — peer deps are `@earendil-works/pi-coding-agent` and `typebox`.
+Pi coding-agent package that exposes git-agent workflows as a native `/git-agent` menu. `extensions/` holds the three entry points: `menu.ts` (command menu), `session-context.ts` (the `session_context` tool feeding commit intents), and `validate-commit.ts` (the post-tool guard blocking raw `git commit`, embedding bounded local session context; `git add` remains allowed). Shared extraction lives in `extensions/lib/session-context-core.ts`. `procedures/*.md` are inline workflow documents embedded verbatim into follow-up messages; `references/` are appendix docs linked from procedures via `{{PKG_DIR}}`. `features/git-agent-menu.feature` holds the Gherkin behavior specs; `tests/test_git_agent_extension.py` asserts source-level contracts. The extension uses the shared `@fradser/pi-kit` runtime for monitor-style lifecycle rows. `@earendil-works/pi-coding-agent`, `@earendil-works/pi-tui`, and `typebox` remain peer dependencies.
 
 ## Build/Test/Development Commands
 
@@ -25,7 +25,7 @@ BDD order is mandatory: change `features/git-agent-menu.feature` scenarios first
 
 ## Agent-Specific Instructions
 
-The installed guard blocks any bash tool call whose text matches command-position `git add` / `git commit` — including snippets inside heredocs or `node -e` strings. When simulating guard regexes, compose those literals by concatenation (`"git " + "add"`). Commits go through bare `git-agent --intent "<intent built via session_context>"`, never raw git plumbing.
+The installed guard blocks bash tool calls whose text matches command-position `git commit`, including snippets inside heredocs or `node -e` strings. It does not block `git add`. When blocking, it locally extracts bounded session context and tells the agent to run bare `git-agent --intent` directly, avoiding a separate `session_context` round. Commits never use raw Git plumbing.
 
 ## Commit & Pull Request Guidelines
 
