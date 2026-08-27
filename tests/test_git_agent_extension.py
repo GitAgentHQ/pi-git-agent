@@ -31,6 +31,7 @@ class TestGitAgentManifest(unittest.TestCase):
         self.assertIn("procedures", data.get("files", []))
         self.assertIn("@earendil-works/pi-coding-agent", data.get("peerDependencies", {}))
         self.assertIn("typebox", data.get("peerDependencies", {}))
+        self.assertEqual(data.get("dependencies", {}).get("@fradser/pi-kit"), "^0.4.0")
         self.assertNotIn("hooks", data.get("files", []))
         self.assertNotIn("pretool-hook", data.get("keywords", []))
 
@@ -51,7 +52,6 @@ class TestGitAgentMenu(unittest.TestCase):
         self.assertIn("sendUserMessage", content)
         self.assertIn("deliverAs", content)
         self.assertIn("{{PKG_DIR}}", content)
-        self.assertIn("before_agent_start", content)
 
     def test_menu_covers_all_procedures(self):
         """Every menu item has a matching procedure file under procedures/."""
@@ -112,9 +112,9 @@ class TestValidateCommitExtension(unittest.TestCase):
             content = f.read()
         self.assertIn('pi.on("tool_call"', content)
         self.assertIn('isToolCallEventType("bash", event)', content)
-        # Denies raw git commit and bare git add
+        # Denies raw git commit, but allows raw git add
         self.assertIn("git\\\\s+commit", content)
-        self.assertIn("git\\\\s+add", content)
+        self.assertNotIn("git\\\\s+add", content)
         self.assertIn("block: true", content)
 
     def test_guard_reason_requires_bare_git_agent_intent(self):
@@ -123,17 +123,25 @@ class TestValidateCommitExtension(unittest.TestCase):
         with open(ext_path, "r", encoding="utf-8") as f:
             content = f.read()
         self.assertIn("git-agent --intent", content)
-        self.assertIn("session_context", content)
+        self.assertIn("session context", content)
+        self.assertIn("extractSessionContext", content)
+        self.assertIn("MAX_CONTEXT_CHARS", content)
+        self.assertNotIn("session_context tool", content)
         self.assertNotIn("/git-agent menu", content)
         self.assertNotIn("Use the /commit skill", content)
+        self.assertNotIn("git add", content)
 
-    def test_guard_exempts_any_git_agent_chain(self):
-        """A chained git-agent invocation (bare or subcommand) bypasses the git add block."""
+
+    def test_guard_uses_bounded_shared_context_extractor(self):
+        """The post-tool guard embeds the same bounded local context as the tool."""
         ext_path = os.path.join(GA_PKG_DIR, "extensions", "validate-commit.ts")
         with open(ext_path, "r", encoding="utf-8") as f:
             content = f.read()
-        # Exemption matches command-position git-agent, not just git-agent commit
-        self.assertIn("pos}git-agent(?:\\\\s|$)", content)
+        self.assertIn('from "./lib/session-context-core"', content)
+        self.assertIn("extractSessionContext", content)
+        self.assertIn("MAX_CONTEXT_CHARS", content)
+        self.assertIn("getEntries", content)
+        self.assertIn("getEntries() as SessionEntry[]", content)
 
 
 class TestSessionContextExtension(unittest.TestCase):
@@ -146,34 +154,56 @@ class TestSessionContextExtension(unittest.TestCase):
         self.assertIn("session_context", content)
         self.assertIn("registerTool", content)
         self.assertIn("getEntries", content)
-        self.assertIn('"message"', content)
+        core_path = os.path.join(GA_PKG_DIR, "extensions", "lib", "session-context-core.ts")
+        with open(core_path, "r", encoding="utf-8") as f:
+            core_content = f.read()
+        self.assertIn('"message"', core_content)
         self.assertIn("sinceLastCall", content)
-        self.assertIn("isContextOrCommitEntry", content)
-        self.assertIn("isInjectedProcedureMessage", content)
-        self.assertIn("Run the \"", content)
+        self.assertIn("isContextOrCommitEntry", core_content)
+        self.assertIn("isInjectedProcedureMessage", core_content)
         self.assertIn("promptSnippet", content)
         self.assertIn("promptGuidelines", content)
-        self.assertIn("truncateTail", content)
-        self.assertIn("DEFAULT_MAX_BYTES", content)
+        self.assertIn("session-context-core", content)
 
     def test_session_context_excludes_injected_menu_procedures(self):
         """session_context must skip menu-injected procedure messages (Run the "..." workflow.),
         which are git-agent's own commands, not user requests."""
-        ext_path = os.path.join(GA_PKG_DIR, "extensions", "session-context.ts")
+        ext_path = os.path.join(GA_PKG_DIR, "extensions", "lib", "session-context-core.ts")
         with open(ext_path, "r", encoding="utf-8") as f:
             content = f.read()
         self.assertIn("isInjectedProcedureMessage", content)
+        self.assertIn("extractSessionContext", content)
         self.assertIn('Run the "', content)
         self.assertIn("workflow", content)
 
     def test_commit_boundary_recognizes_bare_invocation(self):
         """The commit-boundary check must match bare `git-agent --intent ...` as well as
         the legacy `git-agent commit` subcommand form."""
-        ext_path = os.path.join(GA_PKG_DIR, "extensions", "session-context.ts")
+        ext_path = os.path.join(GA_PKG_DIR, "extensions", "lib", "session-context-core.ts")
         with open(ext_path, "r", encoding="utf-8") as f:
             content = f.read()
         self.assertIn("isGitAgentCommit", content)
         self.assertIn('--intent', content)
+
+    def test_session_context_uses_monitor_style_rendering(self):
+        """session_context owns one compact pi-kit lifecycle row and expands details."""
+        ext_path = os.path.join(GA_PKG_DIR, "extensions", "session-context.ts")
+        with open(ext_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        self.assertIn('renderShell: "self"', content)
+        self.assertIn("renderCall: () => new Container()", content)
+        self.assertIn("renderResult(result, { expanded }, theme, context)", content)
+        # Shared band channel, not a hand-rolled box or the retired label fn.
+        self.assertIn("eventToolLifecycle(", content)
+        self.assertIn("renderToolLifecycle(spec,", content)
+        self.assertIn('label: "gathered"', content)
+        self.assertIn('keyHint("app.tools.expand", "to expand")', content)
+        self.assertIn("expanded", content)
+        self.assertIn('"no user requests"', content)
+        self.assertNotIn("formatToolEventLabel", content)
+        self.assertNotIn("new Box", content)
+        self.assertNotIn('renderShell: "default"', content)
+        self.assertNotIn('renderShell: "default"', content)
 
     def test_session_context_collapses_skill_invocations(self):
         """session_context must collapse expanded skill prompt blocks into concise [Invoked skill: ...]
@@ -181,9 +211,11 @@ class TestSessionContextExtension(unittest.TestCase):
         ext_path = os.path.join(GA_PKG_DIR, "extensions", "session-context.ts")
         with open(ext_path, "r", encoding="utf-8") as f:
             content = f.read()
-        self.assertIn("collapseSkillInvocations", content)
-        self.assertIn("<skill", content)
-        self.assertIn("[Invoked skill:", content)
+        core_path = os.path.join(GA_PKG_DIR, "extensions", "lib", "session-context-core.ts")
+        with open(core_path, "r", encoding="utf-8") as f:
+            core_content = f.read()
+        self.assertIn("<skill", core_content)
+        self.assertIn("[Invoked skill:", core_content)
 
     def test_collapse_skill_invocations_execution(self):
         """Test collapseSkillInvocations logic against various skill invocation inputs."""
@@ -195,7 +227,7 @@ class TestSessionContextExtension(unittest.TestCase):
         # We can test with tsx or node with a small script that tests the collapse function
         test_script = """
         const fs = require('fs');
-        const content = fs.readFileSync('./extensions/session-context.ts', 'utf-8');
+        const content = fs.readFileSync('./extensions/lib/session-context-core.ts', 'utf-8');
         // Extract the collapseSkillInvocations function body or compile on the fly
         const funcMatch = content.match(/export function collapseSkillInvocations[\\s\\S]*?\\n}/);
         if (!funcMatch) {
@@ -290,15 +322,14 @@ class TestSessionContextExtension(unittest.TestCase):
         self.assertIn("--tests", content)
         self.assertIn("Loop", content)
 
-    def test_menu_guidance_prioritizes_cochange_intelligence(self):
-        """menu guidance in before_agent_start must highlight git-agent related and co-change analysis."""
+    def test_menu_does_not_inject_before_agent_start_guidance(self):
+        """Git guidance is provided by the post-tool harness, not before_agent_start."""
         ext_path = os.path.join(GA_PKG_DIR, "extensions", "menu.ts")
         with open(ext_path, "r", encoding="utf-8") as f:
             content = f.read()
-        self.assertIn("Git Intelligence & Co-Change Analysis", content)
-        self.assertIn("git-agent related", content)
-        self.assertIn("--tests", content)
-        self.assertIn("Blast radius", content)
+        self.assertNotIn('pi.on("before_agent_start"', content)
+        self.assertNotIn("Git Intelligence & Co-Change Analysis", content)
+        self.assertNotIn("git-agent related", content)
 
     def test_cli_reference_config_precedence(self):
         """references/cli.md must reflect correct config precedence and session attribution distinction."""
