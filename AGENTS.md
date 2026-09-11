@@ -7,7 +7,7 @@ Pi coding-agent package that exposes git-agent workflows as a native `/git-agent
 ## Build/Test/Development Commands
 
 ```bash
-CI=true pnpm install                    # non-TTY shells skip the modules-purge prompt
+pnpm install                              # package.json has no scripts; pnpm-lock.yaml is the lockfile
 ./node_modules/.bin/tsc --noEmit        # typecheck (strict, noEmit; package.json has no scripts)
 python3 -m pytest tests/ -q             # full test suite
 pi install /path/to/pi-git-agent        # load into pi (or: npm:pi-git-agent)
